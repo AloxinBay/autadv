@@ -33,6 +33,18 @@ local config = {
             message = "",
             interval = 20,
             last_time = 0
+        },
+        s = {
+            enabled = false,
+            message = "",
+            interval = 20,
+            last_time = 0
+        },
+        b = {
+            enabled = false,
+            message = "",
+            interval = 20,
+            last_time = 0
         }
     }
 }
@@ -55,6 +67,14 @@ local al_enabled = imgui.ImBool(false)
 local rb_message = imgui.ImBuffer(256)
 local rb_interval = imgui.ImInt(20)
 local rb_enabled = imgui.ImBool(false)
+
+local s_message = imgui.ImBuffer(256)
+local s_interval = imgui.ImInt(20)
+local s_enabled = imgui.ImBool(false)
+
+local b_message = imgui.ImBuffer(256)
+local b_interval = imgui.ImInt(20)
+local b_enabled = imgui.ImBool(false)
 
 function validateInterval(interval)
     if interval < 20 then
@@ -81,11 +101,21 @@ function saveConfig()
     config.ads.rb.message = u8:decode(rb_message.v)
     config.ads.rb.interval = validateInterval(rb_interval.v)
     config.ads.rb.enabled = rb_enabled.v
+
+    config.ads.s.message = u8:decode(s_message.v)
+    config.ads.s.interval = validateInterval(s_interval.v)
+    config.ads.s.enabled = s_enabled.v
+
+    config.ads.b.message = u8:decode(b_message.v)
+    config.ads.b.interval = validateInterval(b_interval.v)
+    config.ads.b.enabled = b_enabled.v
     
     vr_interval.v = config.ads.vr.interval
     fam_interval.v = config.ads.fam.interval
     al_interval.v = config.ads.al.interval
     rb_interval.v = config.ads.rb.interval
+    s_interval.v = config.ads.s.interval
+    b_interval.v = config.ads.s.interval
 end
 
 function loadConfig()
@@ -100,10 +130,18 @@ function loadConfig()
     al_message.v = u8(config.ads.al.message)
     al_interval.v = config.ads.al.interval
     al_enabled.v = config.ads.al.enabled
-    
+
     rb_message.v = u8(config.ads.rb.message)
     rb_interval.v = config.ads.rb.interval
     rb_enabled.v = config.ads.rb.enabled
+    
+    s_message.v = u8(config.ads.s.message)
+    s_interval.v = config.ads.s.interval
+    s_enabled.v = config.ads.s.enabled
+
+    b_message.v = u8(config.ads.s.message)
+    b_interval.v = config.ads.s.interval
+    b_enabled.v = config.ads.s.enabled
 end
 
 function sendAd(adType, message)
@@ -113,6 +151,10 @@ function sendAd(adType, message)
             command = "/vr " .. message
         elseif adType == "fam" then
             command = "/fam " .. message
+        elseif adType == "s" then
+            command = "/s " .. message
+        elseif adType == "b" then
+            command = "/b " .. message
         elseif adType == "al" then
             command = "/al " .. message
         elseif adType == "rb" then
@@ -125,6 +167,7 @@ function sendAd(adType, message)
         end
     end
 end
+
 function drawAdSettings(title, message_buffer, interval_buffer, enabled_buffer, adType)
     imgui.Text(title)
     imgui.Separator()
@@ -197,7 +240,7 @@ end
 function imgui.OnDrawFrame()
     if window.v then
         local sw, sh = getScreenResolution()
-        imgui.SetNextWindowSize(imgui.ImVec2(600, 600), imgui.Cond.FirstUseEver)
+        imgui.SetNextWindowSize(imgui.ImVec2(630, 550), imgui.Cond.FirstUseEver)
         imgui.SetNextWindowPos(imgui.ImVec2(sw/2 - 300, sh/2 - 300), imgui.Cond.FirstUseEver)
         -- нейм вкладки
         if imgui.Begin("Автоматическая реклама", window, imgui.WindowFlags.NoResize) then
@@ -207,20 +250,28 @@ function imgui.OnDrawFrame()
             imgui.Separator()
             imgui.Spacing()
             -- нейм вкладкок , открытие
-            if imgui.Button("Обычная реклама (/vr)", imgui.ImVec2(140, 30)) then
+            if imgui.Button("Вип чат (/vr)", imgui.ImVec2(90, 30)) then
                 current_tab = 1
             end
             imgui.SameLine()
-            if imgui.Button("Семья (/fam)", imgui.ImVec2(140, 30)) then
+            if imgui.Button("Семья (/fam)", imgui.ImVec2(100, 30)) then
                 current_tab = 2
             end
             imgui.SameLine()
-            if imgui.Button("Альянс (/al)", imgui.ImVec2(140, 30)) then
+            if imgui.Button("Альянс (/al)", imgui.ImVec2(100, 30)) then
                 current_tab = 3
             end
             imgui.SameLine()
-            if imgui.Button("Организация (/rb)", imgui.ImVec2(140, 30)) then
+            if imgui.Button("Организация (/rb)", imgui.ImVec2(125, 30)) then
                 current_tab = 4
+            end
+            imgui.SameLine()
+            if imgui.Button("Кричать (/s)", imgui.ImVec2(83, 30)) then
+                current_tab = 5
+            end
+            imgui.SameLine()
+            if imgui.Button("Нрп чат (/b)", imgui.ImVec2(83, 30)) then
+                current_tab = 6
             end
             
             imgui.Spacing()
@@ -235,6 +286,10 @@ function imgui.OnDrawFrame()
                 drawAdSettings("Реклама в альянсе (/al)", al_message, al_interval, al_enabled, "al")
             elseif current_tab == 4 then
                 drawAdSettings("Реклама в организации (/rb)", rb_message, rb_interval, rb_enabled, "rb")
+            elseif current_tab == 5 then
+                drawAdSettings("Кричит текст (/s)", s_message, s_interval, s_enabled, "s")
+            elseif current_tab == 6 then
+                drawAdSettings("Пишет в НРП чат (/b)", s_message, s_interval, s_enabled, "b")
             end
             
             imgui.Separator()
@@ -252,6 +307,7 @@ function imgui.OnDrawFrame()
                 fam_enabled.v = false
                 al_enabled.v = false
                 rb_enabled.v = false
+                s_enabled.v = false
                 saveConfig()
                 sampAddChatMessage("{FFFF00}[AutoAdvert] all advert stop!", -1)
             end
@@ -261,11 +317,11 @@ function imgui.OnDrawFrame()
             imgui.Spacing()
             
             -- инфо в нижней части
-            imgui.TextColored(imgui.ImVec4(0.7, 0.7, 0.7, 1), "Команда для открытия меню: /autoad")
+            imgui.TextColored(imgui.ImVec4(0.7, 0.7, 0.7, 1), "Команда для открытия меню: /autoadvert")
             imgui.TextColored(imgui.ImVec4(0.7, 0.7, 0.7, 1), "Минимальный интервал: 20 секунд")
             imgui.TextColored(imgui.ImVec4(0.7, 0.7, 0.7, 1), "Максимальный интервал: 2000000 секунд")
             imgui.TextColored(imgui.ImVec4(0.7, 0.7, 0.7, 1), "")
-            imgui.TextColored(imgui.ImVec4(0.7, 0.7, 0.7, 1), "Сделано : https://youtube.com/@aloxinbay")
+            imgui.TextColored(imgui.ImVec4(0.7, 0.7, 0.7, 1), "Владелец : https://youtube.com/@aloxinbay")
             imgui.TextColored(imgui.ImVec4(0.7, 0.7, 0.7, 1), "Сделано для вкладки 'Моды' в оффициальном лаунчере ArizonaRP Games")
             
         end
@@ -282,4 +338,3 @@ function onScriptTerminate(script, quitGame)
         saveConfig()
     end
 end
-
